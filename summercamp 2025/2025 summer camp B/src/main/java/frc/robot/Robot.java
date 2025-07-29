@@ -78,7 +78,7 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("rIGHT 1 Motor voltage", Right_Drive_1.getMotorOutputVoltage());
     SmartDashboard.putNumber("Right 2 Motor voltage", Right_Drive_2.getMotorOutputVoltage());
 
-    chassis.arcadeDrive(driveController.getLeftY(), -driveController.getRightX());
+    chassis.arcadeDrive(-driveController.getLeftY(), -driveController.getRightX());
     
     if(driveController.getAButton()){
       Intake.set(1);

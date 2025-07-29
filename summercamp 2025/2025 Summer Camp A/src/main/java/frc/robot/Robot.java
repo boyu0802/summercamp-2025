@@ -92,7 +92,7 @@ public class Robot extends TimedRobot {
       
       chassis.arcadeDrive(-speed, -driveController.getRightX()*0.8);
     }else{
-      chassis.arcadeDrive(driveController.getLeftY()*0.5 , -driveController.getRightX()*0.8 );
+      chassis.arcadeDrive(-driveController.getLeftY()*0.5 , -driveController.getRightX()*0.8 );
     }
 
     if(driveController.getRightTriggerAxis() > 0){
