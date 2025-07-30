@@ -8,7 +8,6 @@ import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 
@@ -23,31 +22,32 @@ public class Robot extends TimedRobot {
    * initialization code.
    */
 
-  private WPI_VictorSPX Left_Drive_1 = new WPI_VictorSPX(1);
-  private WPI_VictorSPX Left_Drive_2 = new WPI_VictorSPX(2);
-  private WPI_VictorSPX Right_Drive_1 = new WPI_VictorSPX(3);
-  private WPI_VictorSPX Right_Drive_2 = new WPI_VictorSPX(4);
-  private WPI_VictorSPX Pivot = new WPI_VictorSPX(6);
-  private WPI_VictorSPX Coral_Output = new WPI_VictorSPX(5);
 
+
+
+  //create motor objects, 馬達物件
+  private WPI_VictorSPX Left_Drive_1 = new WPI_VictorSPX(Constants.Left_Drive_1_Index);
+  private WPI_VictorSPX Left_Drive_2 = new WPI_VictorSPX(Constants.Left_Drive_2_Index);
+  private WPI_VictorSPX Right_Drive_1 = new WPI_VictorSPX(Constants.Right_Drive_1_Index);
+  private WPI_VictorSPX Right_Drive_2 = new WPI_VictorSPX(Constants.Right_Drive_2_Index);
+  private WPI_VictorSPX Pivot = new WPI_VictorSPX(Constants.Pivot_Index);
+  private WPI_VictorSPX Coral_Output = new WPI_VictorSPX(Constants.Coral_Output_Index);
+
+
+  //create controller objects, 搖桿物件
   private XboxController driveController = new XboxController(Constants.Drive_Controller_Index);
+  private XboxController operatorController = new XboxController(Constants.Operator_Controller_Index);
 
+
+  //create chassis object, 機器人底盤物件
   private DifferentialDrive chassis = new DifferentialDrive(Left_Drive_1,Right_Drive_1);
-  private static final Timer timer = new Timer();
-  private double switch_seconds_constant = 0.3;
 
-  private void pivotBackRight(){
-    double time = timer.get();
-    
-    double speed = (int)(time / switch_seconds_constant) % 2 == 0? 0.5 : -0.5;
-
-    Pivot.set(speed);
-  }
 
   public Robot() {
     Left_Drive_2.follow(Left_Drive_1);
     Right_Drive_2.follow(Right_Drive_1);
 
+    //set Invert for all motors, 馬達的正反轉
     Left_Drive_1.setInverted(Constants.Left_Drive_1_Inverted);
     Left_Drive_2.setInverted(Constants.Left_Drive_2_Inverted);
     Right_Drive_1.setInverted(Constants.Right_Drive_1_Inverted);
@@ -55,6 +55,7 @@ public class Robot extends TimedRobot {
     Pivot.setInverted(Constants.Pivot_Inverted);
     Coral_Output.setInverted(Constants.Coral_Output_Inverted);
 
+    //set neutral mode for all motors, brake:煞車  coast: 滑行
     Left_Drive_1.setNeutralMode(NeutralMode.Brake);
     Left_Drive_2.setNeutralMode(NeutralMode.Brake);
     Right_Drive_1.setNeutralMode(NeutralMode.Brake);
@@ -62,6 +63,7 @@ public class Robot extends TimedRobot {
     Pivot.setNeutralMode(NeutralMode.Brake);
     Coral_Output.setNeutralMode(NeutralMode.Brake);
   }
+
 
   @Override
   public void robotPeriodic() {}
@@ -74,50 +76,50 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopInit() {
-    timer.start();
   }
 
   
+
   @Override
   public void teleopPeriodic() {
-    if(driveController.getLeftTriggerAxis() > 0 && driveController.getLeftY() > Constants.Deadband){
-      double trigger = driveController.getLeftTriggerAxis()/2;
-      double y = driveController.getLeftY()/2;
-      double speed = 0;
-      if(y > 0){
-        speed = -trigger - y;
-      }else if(y < 0){
-        speed = trigger - y;
-      } 
-      
-      chassis.arcadeDrive(-speed, -driveController.getRightX()*0.8);
-    }else{
-      chassis.arcadeDrive(-driveController.getLeftY()*0.5 , -driveController.getRightX()*0.8 );
-    }
 
-    if(driveController.getRightTriggerAxis() > 0){
-      pivotBackRight();
-    }
+    //arcade drive to control chassis, 
+    chassis.arcadeDrive(-driveController.getLeftY()*Constants.Drive_Speed , -driveController.getRightX()*Constants.Turn_Speed);
+    /*          
+     *            -                                 +
+     *            ↑                                 ↑
+     *        - ← + →  +         --->          +  ← + →  -
+     *            ↓                                 ↓
+     *            +                                 -
+     * 
+     *    Controller value                    chassis coordinate
+     */
 
-    
-    if(driveController.getAButton()){
-      Coral_Output.set(1);
-      
-    } else if(driveController.getBButton()){
-      Coral_Output.set(-1);
+
+
+    if(operatorController.getAButton()){
+      Coral_Output.set(Constants.Coral_Output_Speed);
+      // set speed of motor, [-1,1]
+    } else if(operatorController.getBButton()){
+      Coral_Output.set(-Constants.Coral_Output_Speed);
     } else{
       Coral_Output.set(0);
     }
 
-    if(driveController.getLeftBumperButton()){
-      Pivot.set(0.8);
-    } else if(driveController.getRightBumperButton()){
-      Pivot.set(-0.8);
+
+    if(operatorController.getLeftBumperButton()){
+      Pivot.set(Constants.Pivot_Speed);
+    } else if(operatorController.getRightBumperButton()){
+      Pivot.set(-Constants.Pivot_Speed);
     } else{
       Pivot.set(0);
     }
 
+    //controller buttons (搖桿按鍵): https://gm0.org/en/latest/docs/software/tutorials/gamepad.html
+
   }
+
+
 
   @Override
   public void disabledInit() {}

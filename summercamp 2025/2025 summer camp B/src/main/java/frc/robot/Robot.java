@@ -23,23 +23,32 @@ public class Robot extends TimedRobot {
    * initialization code.
    */
 
-  private WPI_VictorSPX Left_Drive_1 = new WPI_VictorSPX(3);
-  private WPI_VictorSPX Left_Drive_2 = new WPI_VictorSPX(4);
-  private WPI_VictorSPX Right_Drive_1 = new WPI_VictorSPX(1);
-  private WPI_VictorSPX Right_Drive_2 = new WPI_VictorSPX(2);
-  private WPI_VictorSPX Hanger = new WPI_VictorSPX(5);
-  private WPI_VictorSPX Intake = new WPI_VictorSPX(6);
 
-  private XboxController driveController = new XboxController(0);
 
+  //create motor objects, 馬達物件
+  private WPI_VictorSPX Left_Drive_1 = new WPI_VictorSPX(Constants.Left_Drive_1_Index);
+  private WPI_VictorSPX Left_Drive_2 = new WPI_VictorSPX(Constants.Left_Drive_2_Index);
+  private WPI_VictorSPX Right_Drive_1 = new WPI_VictorSPX(Constants.Right_Drive_1_Index);
+  private WPI_VictorSPX Right_Drive_2 = new WPI_VictorSPX(Constants.Right_Drive_2_Index);
+  private WPI_VictorSPX Hanger = new WPI_VictorSPX(Constants.Hanger_Index);
+  private WPI_VictorSPX Intake = new WPI_VictorSPX(Constants.Intake_Index);
+
+
+  //create controller objects, 搖桿物件
+  private XboxController driveController = new XboxController(Constants.Drive_Controller_Index);
+  private XboxController operatorController = new XboxController(Constants.Operator_Controller_Index);
+
+  //create chassis object, 機器人底盤物件
   private DifferentialDrive chassis = new DifferentialDrive(Left_Drive_1,Right_Drive_1);
 
 
 
   public Robot() {
+
     Left_Drive_2.follow(Left_Drive_1);
     Right_Drive_2.follow(Right_Drive_1);
 
+    //set Invert for all motors, 馬達的正反轉
     Left_Drive_1.setInverted(Constants.Left_Drive_1_Inverted);
     Left_Drive_2.setInverted(Constants.Left_Drive_2_Inverted);
     Right_Drive_1.setInverted(Constants.Right_Drive_1_Inverted);
@@ -47,13 +56,17 @@ public class Robot extends TimedRobot {
     Hanger.setInverted(Constants.Hanger_Inverted);
     Intake.setInverted(Constants.Intake_Inverted);
 
+    //set neutral mode for all motors, brake:煞車  coast: 滑行
     Left_Drive_1.setNeutralMode(NeutralMode.Brake);
     Left_Drive_2.setNeutralMode(NeutralMode.Brake);
     Right_Drive_1.setNeutralMode(NeutralMode.Brake);
     Right_Drive_2.setNeutralMode(NeutralMode.Brake);
     Hanger.setNeutralMode(NeutralMode.Brake);
     Intake.setNeutralMode(NeutralMode.Brake);
-    chassis.setDeadband(0.05);
+
+    //set deadband for chassis, deadband: 死區
+    //是指控制系統中，對應輸出為零的輸入信號範圍
+    chassis.setDeadband(Constants.Deadband);
 
   }
 
@@ -73,16 +86,28 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
-    SmartDashboard.putNumber("LEft 1 Motor voltage", Left_Drive_1.getMotorOutputVoltage());
-    SmartDashboard.putNumber("LEft 2 Motor voltage", Left_Drive_2.getMotorOutputVoltage());
-    SmartDashboard.putNumber("rIGHT 1 Motor voltage", Right_Drive_1.getMotorOutputVoltage());
+    //log to smartDashboard
+    SmartDashboard.putNumber("Left 1 Motor voltage", Left_Drive_1.getMotorOutputVoltage());
+    SmartDashboard.putNumber("Left 2 Motor voltage", Left_Drive_2.getMotorOutputVoltage());
+    SmartDashboard.putNumber("Right 1 Motor voltage", Right_Drive_1.getMotorOutputVoltage());
     SmartDashboard.putNumber("Right 2 Motor voltage", Right_Drive_2.getMotorOutputVoltage());
 
-    chassis.arcadeDrive(-driveController.getLeftY(), -driveController.getRightX());
-    
-    if(driveController.getAButton()){
+    //arcade drive to control chassis, 
+    chassis.arcadeDrive(-driveController.getLeftY()*Constants.Drive_Speed, -driveController.getRightX()*Constants.Turn_Speed);
+    /*          
+    *            -1                                 1
+     *            ↑                                 ↑
+     *       -1 ← + →  1         --->          1  ← + →  -1
+     *            ↓                                 ↓
+     *            1                                -1
+     * 
+     *    Controller value                    chassis coordinate
+     */
+
+    if(operatorController.getAButton()){
       Intake.set(1);
-    } else if(driveController.getBButton()){
+      // set speed of intake motor, [-1,1]
+    } else if(operatorController.getBButton()){
       Intake.set(-1);
     } else{
       Intake.set(0);
@@ -90,26 +115,16 @@ public class Robot extends TimedRobot {
 
     
     
-    if(driveController.getLeftTriggerAxis() > 0.0001){
-      Hanger.set(driveController.getLeftTriggerAxis());
-    } else if(driveController.getRightTriggerAxis() > 0.0002){
-      Hanger.set(-driveController.getRightTriggerAxis());
+    if(operatorController.getLeftTriggerAxis() > Constants.Deadband){
+      Hanger.set(operatorController.getLeftTriggerAxis());
+    } else if(operatorController.getRightTriggerAxis() > Constants.Deadband){
+      Hanger.set(-operatorController.getRightTriggerAxis());
     } else{
       Hanger.set(0);
     }
 
-    /**
-     * @param deadband
-     * 
-     * double deadband = 0.005;
-     * if(driveController.getLeftTriggerAxis()>deadband || 
-       driveController.getRightTriggerAxis()>deadband){
-      Hanger.set(driveController.getLeftTriggerAxis() - driveController.getRightTriggerAxis());
-    } else{
-      Hanger.set(0);
-    }
-      */
-    
+    //controller buttons (搖桿按鍵): https://gm0.org/en/latest/docs/software/tutorials/gamepad.html
+
 
   }
 
